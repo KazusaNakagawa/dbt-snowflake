@@ -1,0 +1,39 @@
+version: 2
+
+models:
+  - name: stg_customers
+    description: Staged customer data
+    columns:
+      - name: customer_id
+        description: Primary key
+        tests:
+          - unique
+          - not_null
+      - name: email
+        description: Customer email address
+        tests:
+          - not_null
+  
+  - name: stg_orders
+    description: Staged order data
+    columns:
+      - name: order_id
+        description: Primary key
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: Foreign key to customers
+        tests:
+          - relationships:
+              to: ref('stg_customers')
+              field: customer_id
+  
+  - name: stg_products
+    description: Staged product data
+    columns:
+      - name: product_id
+        description: Primary key
+        tests:
+          - unique
+          - not_null

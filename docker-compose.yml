@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  dbt:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/usr/src/app
+    env_file:
+      - .env
+    command: ["run", "--profiles-dir", "/usr/src/app/profiles"]

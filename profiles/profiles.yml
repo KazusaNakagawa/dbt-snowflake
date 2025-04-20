@@ -5,7 +5,12 @@ dbt_snowflake:
       type: snowflake
       account: "{{ env_var('DBT_SNOWFLAKE_ACCOUNT') }}"
       user: "{{ env_var('DBT_SNOWFLAKE_USER') }}"
-      password: "{{ env_var('DBT_SNOWFLAKE_PASSWORD') }}"
+
+      # Use key pair authentication instead of password authentication
+      private_key_path: "{{ env_var('DBT_SNOWFLAKE_PRIVATE_KEY_PATH') }}"
+      # Only if the private key has a passphrase
+      # private_key_passphrase: "{{ env_var('DBT_SNOWFLAKE_PRIVATE_KEY_PASSPHRASE', '') }}"
+
       role: "{{ env_var('DBT_SNOWFLAKE_ROLE', 'TRANSFORMER') }}"
       database: "{{ env_var('DBT_SNOWFLAKE_DATABASE', 'ANALYTICS') }}"
       warehouse: "{{ env_var('DBT_SNOWFLAKE_WAREHOUSE', 'TRANSFORMING') }}"

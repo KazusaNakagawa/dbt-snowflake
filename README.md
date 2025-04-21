@@ -146,7 +146,7 @@ The pipeline can be triggered through:
 2. **AWS CLI**:
    ```bash
    aws stepfunctions start-execution \
-     --state-machine-arn arn:aws:states:us-east-1:123456789012:stateMachine:DbtWorkflow \
+     --state-machine-arn arn:aws:states:${AWS_REGION}:${AWS_ACCOUNT}:stateMachine:DbtWorkflow \
      --input '{"environment": "production"}'
    ```
 3. **Programmatically**: Use AWS SDK in your application to trigger the workflow

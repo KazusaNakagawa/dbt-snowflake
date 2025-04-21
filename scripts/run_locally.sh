@@ -30,7 +30,9 @@ fi
 
 echo "Running dbt command: $@"
 
-# Use docker-compose to run dbt commands
-docker-compose run --rm dbt $@
+# Use docker-compose to run dbt commands with the correct project directory
+docker-compose run --rm dbt $@ \
+    --project-dir /usr/src/app/dbt \
+    --profiles-dir /usr/src/app/dbt/profiles
 
 echo "Local dbt command completed successfully!"

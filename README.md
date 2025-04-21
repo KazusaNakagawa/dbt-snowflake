@@ -54,6 +54,10 @@ This project integrates dbt with Snowflake running on AWS infrastructure (ECS, S
    ./scripts/run_locally.sh run
    ```
 
+3. dbt CMD docs
+
+   read ``./scripts/run_locally.sh`` doc string
+
 ### Understanding Snowflake Components
 
 - **Account**: Your Snowflake identifier (`account_name` in `account_name.snowflakecomputing.com`)

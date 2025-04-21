@@ -37,3 +37,6 @@ wheels/
 .idea/
 .vscode/
 .DS_Store
+.user.yml
+.ssh/
+*.pem

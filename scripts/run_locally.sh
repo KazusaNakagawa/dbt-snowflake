@@ -7,54 +7,62 @@
 #   ./scripts/run_locally.sh test
 #   ./scripts/run_locally.sh compile
 #   ./scripts/run_locally.sh docs generate
-#   ./scripts/run_locally.sh docs serve  # ドキュメントをローカルで表示
+#   ./scripts/run_locally.sh docs serve  # Run documentation server locally
 
 set -e
 
-# プロジェクトのルートディレクトリに移動
+# Change to the project root directory
 cd "$(dirname "$0")/.."
 
-# Load environment variables from .env file if it exists
+# Improved environment variable loading method
 if [ -f .env ]; then
-    export $(cat .env | grep -v '^#' | xargs)
+    # Process file line by line, skipping comments and empty lines
+    while IFS= read -r line || [ -n "$line" ]; do
+        # Skip comment lines and empty lines
+        if [[ ! $line =~ ^[[:space:]]*# && -n $line ]]; then
+            # Export the line as an environment variable
+            export "$line"
+        fi
+    done < .env
+    echo "Environment variables loaded successfully"
 else
     echo "Warning: .env file not found. Using default environment variables."
-    # .envファイルがなければ.env.exampleからコピーを作成
+    # If .env file doesn't exist, create one from .env.example
     if [ -f .env.example ]; then
         cp .env.example .env
         echo "Created .env file from .env.example. Please update with your settings."
     fi
 fi
 
-# ログディレクトリが存在しない場合は作成
+# Create logs directory if it doesn't exist
 mkdir -p logs
 
-# Check if any command was provided
+# Check if a command was provided
 if [ -z "$1" ]; then
     echo "Error: No dbt command specified"
     echo "Usage: $0 [dbt command]"
     echo "Examples:"
-    echo "  $0 run                # モデルを実行"
-    echo "  $0 test               # テストを実行"
-    echo "  $0 compile            # SQLのコンパイルのみ"
-    echo "  $0 debug              # 接続テスト"
-    echo "  $0 docs generate      # ドキュメント生成"
-    echo "  $0 docs serve         # ドキュメントサーバーを起動"
+    echo "  $0 run                # Run models"
+    echo "  $0 test               # Run tests"
+    echo "  $0 compile            # Compile SQL only"
+    echo "  $0 debug              # Test connection"
+    echo "  $0 docs generate      # Generate documentation"
+    echo "  $0 docs serve         # Start documentation server"
     exit 1
 fi
 
 echo "Running dbt command: $@"
 
-# ドキュメントサーバーを起動する特別なケース
+# Special case for documentation server
 if [ "$1" = "docs" ] && [ "$2" = "serve" ]; then
-    echo "Starting dbt docs server..."
+    echo "Starting dbt documentation server..."
     docker-compose run --rm -p 8080:8080 dbt docs generate --project-dir /usr/src/app/dbt --profiles-dir /usr/src/app/dbt/profiles
     docker-compose run --rm -p 8080:8080 dbt docs serve --project-dir /usr/src/app/dbt --profiles-dir /usr/src/app/dbt/profiles --port 8080 --host 0.0.0.0
 else
-    # 通常のdbtコマンド実行
+    # Normal dbt command execution
     docker-compose run --rm dbt $@ \
         --project-dir /usr/src/app/dbt \
         --profiles-dir /usr/src/app/dbt/profiles
 fi
 
-echo "✅ Local dbt command completed successfully!"
+echo "✅ dbt command completed successfully!"

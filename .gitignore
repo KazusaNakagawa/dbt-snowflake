@@ -40,3 +40,4 @@ wheels/
 .user.yml
 .ssh/
 *.pem
+note/

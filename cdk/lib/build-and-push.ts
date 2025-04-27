@@ -1,52 +1,80 @@
 // lib/build-and-push.ts
-import * as child_process from 'child_process';
-import * as dotenv from 'dotenv';
+import { execSync } from 'child_process';
 import * as path from 'path';
 
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
-
-function executeCommand(command: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    child_process.exec(command, (error, stdout, stderr) => {
-      if (error) {
-        reject(`実行エラー: ${error.message}`);
-        return;
-      }
-      if (stderr) {
-        console.log(`stderr: ${stderr}`);
-      }
-      resolve(stdout);
-    });
-  });
-}
-
-async function buildAndPushImage() {
+/**
+ * ローカルの Docker イメージを ECR にビルドしてプッシュするユーティリティ関数
+ * @param accountId - AWS アカウント ID
+ * @param region - AWS リージョン
+ * @param repositoryName - ECR リポジトリ名
+ * @param tag - イメージタグ（デフォルトは latest）
+ * @param dockerfilePath - Dockerfile の相対パス
+ * @param platform - ターゲットプラットフォーム（デフォルトは linux/amd64）
+ * @returns プッシュされたイメージの URI
+ */
+export function buildAndPushImage(
+  accountId: string,
+  region: string,
+  repositoryName: string,
+  tag: string = 'latest',
+  dockerfilePath: string = 'docker/Dockerfile',
+  platform: string = 'linux/amd64'
+): string {
+  // リポジトリ URI を構築
+  const repositoryUri = `${accountId}.dkr.ecr.${region}.amazonaws.com/${repositoryName}`;
+  const imageUri = `${repositoryUri}:${tag}`;
+  
   try {
-    const awsRegion = process.env.AWS_REGION || 'us-east-1';
-    const ecrRepoName = process.env.ECR_REPOSITORY_NAME || 'dbt-snowflake';
+    // プロジェクトのルートディレクトリを取得（cdk フォルダの親）
+    const projectRoot = path.resolve(__dirname, '../..');
     
-    console.log('AWSアカウントIDを取得中...');
-    const awsAccountId = (await executeCommand('aws sts get-caller-identity --query Account --output text')).trim();
+    console.log('🔹 ECR リポジトリにログイン中...');
+    // AWS ECR にログイン
+    execSync(`aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin ${repositoryUri}`, 
+      { stdio: 'inherit', cwd: projectRoot });
     
-    const ecrRepositoryUri = `${awsAccountId}.dkr.ecr.${awsRegion}.amazonaws.com/${ecrRepoName}`;
+    // Docker イメージのビルド（マルチプラットフォーム対応）
+    console.log(`🔹 Docker イメージを ${platform} 向けにビルド中...`);
+    execSync(`docker buildx create --use --name dbt-builder || true`, { stdio: 'inherit', cwd: projectRoot });
+    execSync(`docker buildx build --platform ${platform} -t ${repositoryName}:${tag} -f ${dockerfilePath} --load .`, 
+      { stdio: 'inherit', cwd: projectRoot });
     
-    console.log('ECRにログイン中...');
-    await executeCommand(`aws ecr get-login-password --region ${awsRegion} | docker login --username AWS --password-stdin ${ecrRepositoryUri}`);
+    // ECR リポジトリ用にタグ付け
+    console.log('🔹 ECR リポジトリ用にタグ付け中...');
+    execSync(`docker tag ${repositoryName}:${tag} ${imageUri}`, 
+      { stdio: 'inherit', cwd: projectRoot });
     
-    console.log('Dockerイメージをビルド中...');
-    await executeCommand(`docker build -t ${ecrRepoName}:latest -f docker/Dockerfile .`);
+    // ECR リポジトリにプッシュ
+    console.log('🔹 ECR リポジトリにプッシュ中...');
+    execSync(`docker push ${imageUri}`, 
+      { stdio: 'inherit', cwd: projectRoot });
     
-    console.log('イメージにタグを付けています...');
-    await executeCommand(`docker tag ${ecrRepoName}:latest ${ecrRepositoryUri}:latest`);
-    
-    console.log('ECRにイメージをプッシュ中...');
-    await executeCommand(`docker push ${ecrRepositoryUri}:latest`);
-    
-    console.log(`イメージが正常にプッシュされました: ${ecrRepositoryUri}:latest`);
+    console.log(`✅ イメージが正常にプッシュされました: ${imageUri}`);
+    return imageUri;
   } catch (error) {
-    console.error('エラーが発生しました:', error);
-    process.exit(1);
+    console.error('❌ イメージのビルド・プッシュ中にエラーが発生しました:', error);
+    throw error;
   }
 }
 
-buildAndPushImage();
+/**
+ * ECR リポジトリが存在するか確認し、なければ作成するユーティリティ関数
+ * @param region - AWS リージョン
+ * @param repositoryName - ECR リポジトリ名
+ * @returns true: 新規作成、false: 既に存在
+ */
+export function ensureRepositoryExists(region: string, repositoryName: string): boolean {
+  try {
+    // リポジトリが存在するか確認
+    execSync(`aws ecr describe-repositories --repository-names ${repositoryName} --region ${region}`, 
+      { stdio: 'pipe' });
+    console.log(`📦 リポジトリが既に存在します: ${repositoryName}`);
+    return false;
+  } catch (error) {
+    // エラーの場合は存在しないので作成
+    console.log(`🔨 リポジトリを作成中: ${repositoryName}`);
+    execSync(`aws ecr create-repository --repository-name ${repositoryName} --region ${region}`, 
+      { stdio: 'inherit' });
+    return true;
+  }
+}

@@ -6,9 +6,14 @@
   },
   "scripts": {
     "build": "tsc",
+    "clean": "rm -rf dist",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "deploy:image": "ts-node bin/deploy-image.ts",
+    "deploy:all": "npm run build && npm run deploy:image && cdk deploy",
+    "full-deploy": "npm run build && ts-node bin/full-deploy.ts",
+    "full-deploy:run": "npm run build && ts-node bin/full-deploy.ts --run"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

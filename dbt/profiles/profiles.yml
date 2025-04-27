@@ -15,4 +15,7 @@ dbt_snowflake:
       database: "{{ env_var('DBT_SNOWFLAKE_DATABASE', 'ANALYTICS') }}"
       warehouse: "{{ env_var('DBT_SNOWFLAKE_WAREHOUSE', 'TRANSFORMING') }}"
       schema: "{{ env_var('DBT_SNOWFLAKE_SCHEMA', 'DBT_TRANSFORMATIONS') }}"
-      threads: 4
+      threads: 1
+      connect_timeout: 45 # Timeout in seconds
+      retry_on_database_errors: true
+      client_session_keep_alive: true

@@ -131,6 +131,13 @@ export class DbtSnowflakeStack extends cdk.Stack {
     // サブネットを取得
     const subnets = vpc.publicSubnets.map(subnet => subnet.subnetId)
 
+    // Security Groupを新しく作る
+    const dbtSecurityGroup = new ec2.SecurityGroup(this, 'DbtSecurityGroup', {
+      vpc,
+      description: 'Security group for dbt tasks',
+      allowAllOutbound: true, // ← ここが重要！！！
+    })
+
     // dbt debug タスク
     const dbtDebugTask = new tasks.EcsRunTask(this, 'DbtDebugTask', {
       cluster,
@@ -138,12 +145,21 @@ export class DbtSnowflakeStack extends cdk.Stack {
       launchTarget: new tasks.EcsFargateLaunchTarget({
         platformVersion: ecs.FargatePlatformVersion.LATEST,
       }),
-      // コンテナとコマンドの指定方法を修正
       containerOverrides: [{
         containerDefinition: container,
         command: ['debug'],
+        environment: [
+          { name: 'DBT_SNOWFLAKE_ACCOUNT', value: snowflakeAccount },
+          { name: 'DBT_SNOWFLAKE_USER', value: snowflakeUser },
+          { name: 'DBT_SNOWFLAKE_PASSWORD', value: snowflakePassword },
+          { name: 'DBT_SNOWFLAKE_PRIVATE_KEY_PATH', value: snowflakePrivateKeyPath },
+          { name: 'DBT_SNOWFLAKE_ROLE', value: snowflakeRole },
+          { name: 'DBT_SNOWFLAKE_DATABASE', value: snowflakeDatabase },
+          { name: 'DBT_SNOWFLAKE_WAREHOUSE', value: snowflakeWarehouse },
+          { name: 'DBT_SNOWFLAKE_SCHEMA', value: snowflakeSchema },
+        ],
       }],
-      securityGroups: [],
+      securityGroups: [dbtSecurityGroup],
       assignPublicIp: true,
       subnets: vpc.selectSubnets({ subnetType: ec2.SubnetType.PUBLIC }),
       integrationPattern: sfn.IntegrationPattern.RUN_JOB,
@@ -156,12 +172,21 @@ export class DbtSnowflakeStack extends cdk.Stack {
       launchTarget: new tasks.EcsFargateLaunchTarget({
         platformVersion: ecs.FargatePlatformVersion.LATEST,
       }),
-      // コンテナとコマンドの指定方法を修正
       containerOverrides: [{
         containerDefinition: container,
         command: ['run', '--fail-fast'],
+        environment: [
+          { name: 'DBT_SNOWFLAKE_ACCOUNT', value: snowflakeAccount },
+          { name: 'DBT_SNOWFLAKE_USER', value: snowflakeUser },
+          { name: 'DBT_SNOWFLAKE_PASSWORD', value: snowflakePassword },
+          { name: 'DBT_SNOWFLAKE_PRIVATE_KEY_PATH', value: snowflakePrivateKeyPath },
+          { name: 'DBT_SNOWFLAKE_ROLE', value: snowflakeRole },
+          { name: 'DBT_SNOWFLAKE_DATABASE', value: snowflakeDatabase },
+          { name: 'DBT_SNOWFLAKE_WAREHOUSE', value: snowflakeWarehouse },
+          { name: 'DBT_SNOWFLAKE_SCHEMA', value: snowflakeSchema },
+        ],
       }],
-      securityGroups: [],
+      securityGroups: [dbtSecurityGroup],
       assignPublicIp: true,
       subnets: vpc.selectSubnets({ subnetType: ec2.SubnetType.PUBLIC }),
       integrationPattern: sfn.IntegrationPattern.RUN_JOB,

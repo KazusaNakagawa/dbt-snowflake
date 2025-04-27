@@ -58,6 +58,16 @@ export class DbtSnowflakeStack extends cdk.Stack {
       ephemeralStorageGiB: 21,
     })
 
+    // Snowflake接続情報
+    const snowflakeAccount = process.env.DB_SNOWFLAKE_ACCOUNT || ''
+    const snowflakeUser = process.env.DB_SNOWFLAKE_USER || ''
+    const snowflakePassword = process.env.DB_SNOWFLAKE_PASSWORD || ''
+    const snowflakePrivateKeyPath = process.env.DB_SNOWFLAKE_PRIVATE_KEY_PATH || ''
+    const snowflakeRole = process.env.DB_SNOWFLAKE_ROLE || 'ACCOUNTADMIN'
+    const snowflakeDatabase = process.env.DB_SNOWFLAKE_DATABASE || 'MY_DBT_DB'
+    const snowflakeWarehouse = process.env.DB_SNOWFLAKE_WAREHOUSE || 'TRANSFORMING'
+    const snowflakeSchema = process.env.DB_SNOWFLAKE_SCHEMA || 'TPCH_SF1'
+
     // コンテナ定義
     const container = taskDefinition.addContainer('dbt-container', {
       image: ecs.ContainerImage.fromEcrRepository(repository, 'latest'),
@@ -65,11 +75,20 @@ export class DbtSnowflakeStack extends cdk.Stack {
         streamPrefix: 'dbt',
         logGroup: new logs.LogGroup(this, 'DbtLogGroup', {
           logGroupName: '/ecs/dbt-tasks',
+          retention: logs.RetentionDays.TWO_YEARS,
           removalPolicy: cdk.RemovalPolicy.DESTROY,
         }),
       }),
       environment: {
         'DBT_PROFILES_DIR': '/usr/src/app/dbt/profiles',
+        'DBT_SNOWFLAKE_ACCOUNT': snowflakeAccount,
+        'DBT_SNOWFLAKE_USER': snowflakeUser,
+        'DBT_SNOWFLAKE_PASSWORD': snowflakePassword,
+        'DBT_SNOWFLAKE_PRIVATE_KEY_PATH': snowflakePrivateKeyPath,
+        'DBT_SNOWFLAKE_ROLE': snowflakeRole,
+        'DBT_SNOWFLAKE_DATABASE': snowflakeDatabase,
+        'DBT_SNOWFLAKE_WAREHOUSE': snowflakeWarehouse,
+        'DBT_SNOWFLAKE_SCHEMA': snowflakeSchema,
       },
       healthCheck: {
         command: ['CMD-SHELL', 'dbt --version || exit 1'],
@@ -85,10 +104,10 @@ export class DbtSnowflakeStack extends cdk.Stack {
       'DB_SNOWFLAKE_USER': process.env.DB_SNOWFLAKE_USER || 'your_user',
       'DB_SNOWFLAKE_PASSWORD': process.env.DB_SNOWFLAKE_PASSWORD || 'your_password',
       'DB_SNOWFLAKE_PRIVATE_KEY_PATH': process.env.DB_SNOWFLAKE_PRIVATE_KEY_PATH || 'your_private_key_path',
-      'DB_SNOWFLAKE_ROLE': process.env.DB_SNOWFLAKE_ROLE || 'your_role',
-      'DB_SNOWFLAKE_DATABASE': process.env.DB_SNOWFLAKE_DATABASE || 'your_database',
-      'DB_SNOWFLAKE_WAREHOUSE': process.env.DB_SNOWFLAKE_WAREHOUSE || 'your_warehouse',
-      'DB_SNOWFLAKE_SCHEMA': process.env.DB_SNOWFLAKE_SCHEMA || 'your_schema',
+      'DB_SNOWFLAKE_ROLE': snowflakeRole,
+      'DB_SNOWFLAKE_DATABASE': snowflakeDatabase,
+      'DB_SNOWFLAKE_WAREHOUSE': snowflakeWarehouse,
+      'DB_SNOWFLAKE_SCHEMA': snowflakeSchema,
     };
 
     createDbtSnowflakeSsmParameter(this, 'DbtSnowflakeConfig', '/dbt/snowflake/info', dbtSnowflakeConfig);

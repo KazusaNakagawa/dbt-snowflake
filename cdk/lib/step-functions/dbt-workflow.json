@@ -1,0 +1,254 @@
+{
+  "Comment": "DBT Snowflake 変換ワークフロー",
+  "StartAt": "DBT Debug",
+  "States": {
+    "DBT Debug": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "dbt-cluster",
+        "TaskDefinition": "dbt-task",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": ["subnet-12345", "subnet-67890"],
+            "SecurityGroups": ["sg-12345"],
+            "AssignPublicIp": "ENABLED"
+          }
+        },
+        "Overrides": {
+          "ContainerOverrides": [
+            {
+              "Name": "dbt-container",
+              "Command": ["debug"]
+            }
+          ]
+        }
+      },
+      "Next": "DBT Deps",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "Notify Failure"
+        }
+      ],
+      "Retry": [
+        {
+          "ErrorEquals": ["States.TaskFailed"],
+          "IntervalSeconds": 15,
+          "MaxAttempts": 2,
+          "BackoffRate": 1.5
+        }
+      ]
+    },
+    "DBT Deps": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "dbt-cluster",
+        "TaskDefinition": "dbt-task",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": ["subnet-12345", "subnet-67890"],
+            "SecurityGroups": ["sg-12345"],
+            "AssignPublicIp": "ENABLED"
+          }
+        },
+        "Overrides": {
+          "ContainerOverrides": [
+            {
+              "Name": "dbt-container",
+              "Command": ["deps"]
+            }
+          ]
+        }
+      },
+      "Next": "DBT Run",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "Notify Failure"
+        }
+      ]
+    },
+    "DBT Run": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "dbt-cluster",
+        "TaskDefinition": "dbt-task",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": ["subnet-12345", "subnet-67890"],
+            "SecurityGroups": ["sg-12345"],
+            "AssignPublicIp": "ENABLED"
+          }
+        },
+        "Overrides": {
+          "ContainerOverrides": [
+            {
+              "Name": "dbt-container",
+              "Command": ["run", "--fail-fast"]
+            }
+          ]
+        }
+      },
+      "Next": "DBT Test",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "Notify Failure"
+        }
+      ],
+      "Retry": [
+        {
+          "ErrorEquals": ["States.TaskFailed"],
+          "IntervalSeconds": 60,
+          "MaxAttempts": 1,
+          "BackoffRate": 2.0
+        }
+      ]
+    },
+    "DBT Test": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "dbt-cluster",
+        "TaskDefinition": "dbt-task",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": ["subnet-12345", "subnet-67890"],
+            "SecurityGroups": ["sg-12345"],
+            "AssignPublicIp": "ENABLED"
+          }
+        },
+        "Overrides": {
+          "ContainerOverrides": [
+            {
+              "Name": "dbt-container",
+              "Command": ["test"]
+            }
+          ]
+        }
+      },
+      "Next": "DBT Docs Generate",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "Notify Test Failure"
+        }
+      ]
+    },
+    "DBT Docs Generate": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "dbt-cluster",
+        "TaskDefinition": "dbt-task",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": ["subnet-12345", "subnet-67890"],
+            "SecurityGroups": ["sg-12345"],
+            "AssignPublicIp": "ENABLED"
+          }
+        },
+        "Overrides": {
+          "ContainerOverrides": [
+            {
+              "Name": "dbt-container",
+              "Command": ["docs", "generate"]
+            }
+          ]
+        }
+      },
+      "Next": "Update Artifacts",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "Success Notification"
+        }
+      ]
+    },
+    "Update Artifacts": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "dbt-cluster",
+        "TaskDefinition": "dbt-artifacts-upload-task",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": ["subnet-12345", "subnet-67890"],
+            "SecurityGroups": ["sg-12345"],
+            "AssignPublicIp": "ENABLED"
+          }
+        }
+      },
+      "Next": "Success Notification",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "Success Notification"
+        }
+      ]
+    },
+    "Success Notification": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:sns:${AWS_REGION}:${AWS_ACCOUNT}:dbt-notifications",
+        "Message": {
+          "default": "DBT ワークフロー正常終了！",
+          "email": "DBT Snowflake ワークフローが正常に完了しました。詳細はCloudWatchログをご確認ください。"
+        },
+        "MessageAttributes": {
+          "Status": {
+            "DataType": "String",
+            "StringValue": "SUCCESS"
+          }
+        }
+      },
+      "End": true
+    },
+    "Notify Test Failure": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:sns:${AWS_REGION}:${AWS_ACCOUNT}:dbt-notifications",
+        "Message": {
+          "default": "DBT テスト失敗",
+          "email": "DBT Snowflakeのテスト中にエラーが発生しました。変換自体は成功していますが、テストに失敗しています。詳細はCloudWatchログをご確認ください。"
+        },
+        "MessageAttributes": {
+          "Status": {
+            "DataType": "String",
+            "StringValue": "TEST_FAILURE"
+          }
+        }
+      },
+      "End": true
+    },
+    "Notify Failure": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:sns:${AWS_REGION}:${AWS_ACCOUNT}:dbt-notifications",
+        "Message": {
+          "default": "DBT ワークフロー失敗",
+          "email": "DBT Snowflakeワークフローの実行中にエラーが発生しました。詳細はCloudWatchログをご確認ください。"
+        },
+        "MessageAttributes": {
+          "Status": {
+            "DataType": "String",
+            "StringValue": "FAILURE"
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

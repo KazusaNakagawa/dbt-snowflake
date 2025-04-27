@@ -1,0 +1,32 @@
+{
+  "name": "cdk",
+  "version": "0.1.0",
+  "bin": {
+    "cdk": "bin/cdk.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "watch": "tsc -w",
+    "test": "jest",
+    "cdk": "cdk",
+    "deploy:image": "ts-node bin/deploy-image.ts",
+    "deploy:all": "npm run build && npm run deploy:image && cdk deploy",
+    "full-deploy": "npm run build && ts-node bin/full-deploy.ts",
+    "full-deploy:run": "npm run build && ts-node bin/full-deploy.ts --run"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "22.7.9",
+    "aws-cdk": "2.1012.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.6.3"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.190.0",
+    "constructs": "^10.4.2",
+    "dotenv": "^16.5.0"
+  }
+}

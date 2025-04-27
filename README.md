@@ -35,7 +35,7 @@ This project integrates dbt (data build tool) with Snowflake running on AWS infr
    **Important Notes**:
    - For the `DBT_SNOWFLAKE_ACCOUNT` value, only use the account identifier without the `.snowflakecomputing.com` domain
    - If MFA is enabled, you may need to set up key pair authentication:
-     ```
+     ```bash
      # Generate keys (no passphrase)
      openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out rsa_key.p8 -nocrypt
      openssl rsa -in rsa_key.p8 -pubout -out rsa_key.pub
@@ -48,7 +48,7 @@ This project integrates dbt (data build tool) with Snowflake running on AWS infr
 
 2. Run dbt commands locally:
    ```bash
-   docker-compose up
+   docker-compose -f docker-compose.local.yml up
    ```
    or
    ```bash
@@ -146,7 +146,7 @@ The pipeline can be triggered through:
 2. **AWS CLI**:
    ```bash
    aws stepfunctions start-execution \
-     --state-machine-arn arn:aws:states:us-east-1:123456789012:stateMachine:DbtWorkflow \
+     --state-machine-arn arn:aws:states:${AWS_REGION}:${AWS_ACCOUNT}:stateMachine:DbtWorkflow \
      --input '{"environment": "production"}'
    ```
 3. **Programmatically**: Use AWS SDK in your application to trigger the workflow

@@ -5,14 +5,18 @@ dbt_snowflake:
       type: snowflake
       account: "{{ env_var('DBT_SNOWFLAKE_ACCOUNT') }}"
       user: "{{ env_var('DBT_SNOWFLAKE_USER') }}"
-
       # Use key pair authentication instead of password authentication
       private_key_path: "{{ env_var('DBT_SNOWFLAKE_PRIVATE_KEY_PATH') }}"
       # Only if the private key has a passphrase
       # private_key_passphrase: "{{ env_var('DBT_SNOWFLAKE_PRIVATE_KEY_PASSPHRASE', '') }}"
 
-      role: "{{ env_var('DBT_SNOWFLAKE_ROLE', 'TRANSFORMER') }}"
-      database: "{{ env_var('DBT_SNOWFLAKE_DATABASE', 'ANALYTICS') }}"
-      warehouse: "{{ env_var('DBT_SNOWFLAKE_WAREHOUSE', 'TRANSFORMING') }}"
-      schema: "{{ env_var('DBT_SNOWFLAKE_SCHEMA', 'DBT_TRANSFORMATIONS') }}"
-      threads: 4
+      role: "{{ env_var('DBT_SNOWFLAKE_ROLE') }}"
+      database: "{{ env_var('DBT_SNOWFLAKE_DATABASE') }}"
+      warehouse: "{{ env_var('DBT_SNOWFLAKE_WAREHOUSE') }}"
+      schema: "{{ env_var('DBT_SNOWFLAKE_SCHEMA') }}"
+      threads: 1
+      connect_timeout: 45 # Timeout in seconds
+      retry_on_database_errors: true
+      client_session_keep_alive: true
+      # FIXME: 本番NG 認証しない
+      insecure_mode: true

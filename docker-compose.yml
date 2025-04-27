@@ -6,6 +6,21 @@ services:
       context: .
       dockerfile: ./docker/Dockerfile
     volumes:
-      - .:/usr/src/app
+      - ./dbt:/usr/src/app/dbt
+      - ./logs:/usr/src/app/logs
     env_file:
       - .env
+    environment:
+      - DBT_PROFILES_DIR=/usr/src/app/dbt/profiles
+    networks:
+      - dbt-network
+    healthcheck:
+      test: ["CMD", "dbt", "--version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+networks:
+  dbt-network:
+    driver: bridge

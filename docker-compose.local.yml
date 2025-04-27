@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  dbt:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.local
+    volumes:
+      - .:/usr/src/app
+    env_file:
+      - .env
+    environment: # ←追加
+      - NO_PROXY=.snowflakecomputing.com
+      # ――学習用に OCSP を fail-open する場合だけ――
+      # - SF_OCSP_FAIL_OPEN=true

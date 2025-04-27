@@ -56,11 +56,14 @@ echo "Running dbt command: $@"
 # Special case for documentation server
 if [ "$1" = "docs" ] && [ "$2" = "serve" ]; then
     echo "Starting dbt documentation server..."
-    docker-compose run --rm -p 8080:8080 dbt docs generate --project-dir /usr/src/app/dbt --profiles-dir /usr/src/app/dbt/profiles
-    docker-compose run --rm -p 8080:8080 dbt docs serve --project-dir /usr/src/app/dbt --profiles-dir /usr/src/app/dbt/profiles --port 8080 --host 0.0.0.0
+    docker-compose -f docker-compose.local.yml run \
+        --rm -p 8080:8080 dbt docs generate --project-dir /usr/src/app/dbt --profiles-dir /usr/src/app/dbt/profiles
+    docker-compose -f docker-compose.local.yml run \
+        --rm -p 8080:8080 dbt docs serve --project-dir /usr/src/app/dbt --profiles-dir /usr/src/app/dbt/profiles --port 8080 --host 0.0.0.0
 else
     # Normal dbt command execution
-    docker-compose run --rm dbt $@ \
+    docker-compose -f docker-compose.local.yml run \
+        --rm dbt $@ \
         --project-dir /usr/src/app/dbt \
         --profiles-dir /usr/src/app/dbt/profiles
 fi

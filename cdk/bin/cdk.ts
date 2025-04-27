@@ -3,7 +3,7 @@ import * as cdk from 'aws-cdk-lib';
 import { DbtSnowflakeStack } from '../lib/dbt-stack';
 
 const app = new cdk.App();
-new DbtSnowflakeStack(app, 'CdkStack', {
+new DbtSnowflakeStack(app, 'DbtSnowflakeStack', {
   env: {
     account: process.env.CDK_DEFAULT_ACCOUNT,
     region: process.env.CDK_DEFAULT_REGION,

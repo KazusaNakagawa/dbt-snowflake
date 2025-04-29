@@ -9,7 +9,3 @@ services:
       - .:/usr/src/app
     env_file:
       - .env
-    environment: # ←追加
-      - NO_PROXY=.snowflakecomputing.com
-      # ――学習用に OCSP を fail-open する場合だけ――
-      # - SF_OCSP_FAIL_OPEN=true

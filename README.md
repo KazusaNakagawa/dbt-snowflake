@@ -91,32 +91,21 @@ This project integrates dbt (data build tool) with Snowflake running on AWS infr
 
 ### Deployment
 
-1. Update AWS region and account IDs in the AWS resource files:
-   - Update `aws/ecs/task-definition.json` with your container details
-   - Update IAM roles in `aws/iam/` directory
-   - Configure the state machine in `aws/step-functions/dbt-workflow.json`
-
-2. Run the deployment script:
-   ```bash
-   ./deploy.sh
-   ```
-
-3. Monitor the deployment in the AWS Management Console.
+T.B.D
 
 ## Project Structure
 
-- `dbt/`: DBT project files
-  - `models/`: DBT SQL models
-    - `staging/`: Initial transformations from raw data
-    - `marts/core/`: Business-specific transformations
-  - `profiles/`: Contains Snowflake connection profiles
-  - `target/`: Generated artifacts and compiled SQL
-- `aws/`: AWS infrastructure definitions
-  - `ecs/`: AWS ECS configurations
-  - `iam/`: IAM roles and policies
-  - `step-functions/`: AWS Step Functions workflow definitions
-- `docker/`: Docker configuration
-- `scripts/`: Utility scripts
+```bash
+dbt/
+├── models/
+│   ├── marts/core/       # Business-specific transformations
+│   ├── staging/          # Initial transformations from raw data
+├── profiles/             # Contains Snowflake connection profiles
+├── target/               # Generated artifacts and compiled SQL
+cdk/
+docker/                   # Docker configuration
+scripts/                  # Utility scripts
+```
 
 ## Data Model
 

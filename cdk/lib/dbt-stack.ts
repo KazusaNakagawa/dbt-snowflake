@@ -60,6 +60,7 @@ export class DbtSnowflakeStack extends cdk.Stack {
 
     // Snowflake接続情報
     const snowflakeAccount = process.env.DB_SNOWFLAKE_ACCOUNT || ''
+    const snowflakeHost = process.env.DB_SNOWFLAKE_HOST || ''
     const snowflakeUser = process.env.DB_SNOWFLAKE_USER || ''
     const snowflakePassword = process.env.DB_SNOWFLAKE_PASSWORD || ''
     const snowflakePrivateKeyPath = process.env.DB_SNOWFLAKE_PRIVATE_KEY_PATH || ''
@@ -82,6 +83,7 @@ export class DbtSnowflakeStack extends cdk.Stack {
       environment: {
         'DBT_PROFILES_DIR': '/usr/src/app/dbt/profiles',
         'DBT_SNOWFLAKE_ACCOUNT': snowflakeAccount,
+        'DBT_SNOWFLAKE_HOST': snowflakeHost,
         'DBT_SNOWFLAKE_USER': snowflakeUser,
         'DBT_SNOWFLAKE_PASSWORD': snowflakePassword,
         'DBT_SNOWFLAKE_PRIVATE_KEY_PATH': snowflakePrivateKeyPath,
@@ -101,6 +103,7 @@ export class DbtSnowflakeStack extends cdk.Stack {
 
     const dbtSnowflakeConfig = {
       'DB_SNOWFLAKE_ACCOUNT': process.env.DB_SNOWFLAKE_ACCOUNT || 'your_account',
+      'DB_SNOWFLAKE_HOST': process.env.DB_SNOWFLAKE_HOST || 'your_host',
       'DB_SNOWFLAKE_USER': process.env.DB_SNOWFLAKE_USER || 'your_user',
       'DB_SNOWFLAKE_PASSWORD': process.env.DB_SNOWFLAKE_PASSWORD || 'your_password',
       'DB_SNOWFLAKE_PRIVATE_KEY_PATH': process.env.DB_SNOWFLAKE_PRIVATE_KEY_PATH || 'your_private_key_path',
@@ -150,6 +153,7 @@ export class DbtSnowflakeStack extends cdk.Stack {
         command: ['debug'],
         environment: [
           { name: 'DBT_SNOWFLAKE_ACCOUNT', value: snowflakeAccount },
+          { name: 'DBT_SNOWFLAKE_HOST', value: snowflakeHost },
           { name: 'DBT_SNOWFLAKE_USER', value: snowflakeUser },
           { name: 'DBT_SNOWFLAKE_PASSWORD', value: snowflakePassword },
           { name: 'DBT_SNOWFLAKE_PRIVATE_KEY_PATH', value: snowflakePrivateKeyPath },
@@ -177,6 +181,7 @@ export class DbtSnowflakeStack extends cdk.Stack {
         command: ['run', '--fail-fast'],
         environment: [
           { name: 'DBT_SNOWFLAKE_ACCOUNT', value: snowflakeAccount },
+          { name: 'DBT_SNOWFLAKE_HOST', value: snowflakeHost },
           { name: 'DBT_SNOWFLAKE_USER', value: snowflakeUser },
           { name: 'DBT_SNOWFLAKE_PASSWORD', value: snowflakePassword },
           { name: 'DBT_SNOWFLAKE_PRIVATE_KEY_PATH', value: snowflakePrivateKeyPath },

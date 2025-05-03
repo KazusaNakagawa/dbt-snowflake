@@ -91,18 +91,22 @@ This project integrates dbt (data build tool) with Snowflake running on AWS infr
 
 ### Deployment
 
-T.B.D
+- [./cdk/README.md](./cdk/README.md)
 
 ## Project Structure
 
 ```bash
+cdk/
+├── lib/                  # Contains the main CDK stack definitions
+├── bin/                  # Entry point for the CDK application   
+├── cdk.json              # Configuration file for the CDK application
+└── README.md             # Documentation for the CDK setup and usage
 dbt/
 ├── models/
 │   ├── marts/core/       # Business-specific transformations
 │   ├── staging/          # Initial transformations from raw data
 ├── profiles/             # Contains Snowflake connection profiles
 ├── target/               # Generated artifacts and compiled SQL
-cdk/
 docker/                   # Docker configuration
 scripts/                  # Utility scripts
 ```

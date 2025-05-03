@@ -3,7 +3,6 @@ import { Construct } from 'constructs'
 import * as ecs from 'aws-cdk-lib/aws-ecs'
 import * as iam from 'aws-cdk-lib/aws-iam'
 import * as sfn from 'aws-cdk-lib/aws-stepfunctions'
-import * as tasks from 'aws-cdk-lib/aws-stepfunctions-tasks'
 import * as logs from 'aws-cdk-lib/aws-logs'
 import * as s3 from 'aws-cdk-lib/aws-s3'
 import * as dotenv from 'dotenv'
@@ -11,7 +10,9 @@ import * as path from 'path'
 import * as ec2 from 'aws-cdk-lib/aws-ec2'
 import { createEcrRepository } from './ecr';
 import { createEcsExecutionRole, createDbtTaskRole } from './iam';
-import { createDbtSnowflakeSsmParameter } from './ssm';
+import { createDbtDebugTask, createDbtRunTask } from './dbt-task'
+// import { createDbtSnowflakeSsmParameter } from './ssm';
+
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') })
 
@@ -58,6 +59,9 @@ export class DbtSnowflakeStack extends cdk.Stack {
       ephemeralStorageGiB: 21,
     })
 
+    // dbt
+    const sbtProfilesDir = process.env.DBT_PROFILES_DIR || '/usr/src/app/dbt/profiles'
+
     // Snowflake接続情報
     const snowflakeAccount = process.env.DB_SNOWFLAKE_ACCOUNT || ''
     const snowflakeHost = process.env.DB_SNOWFLAKE_HOST || ''
@@ -81,16 +85,16 @@ export class DbtSnowflakeStack extends cdk.Stack {
         }),
       }),
       environment: {
-        'DBT_PROFILES_DIR': '/usr/src/app/dbt/profiles',
-        'DBT_SNOWFLAKE_ACCOUNT': snowflakeAccount,
-        'DBT_SNOWFLAKE_HOST': snowflakeHost,
-        'DBT_SNOWFLAKE_USER': snowflakeUser,
-        'DBT_SNOWFLAKE_PASSWORD': snowflakePassword,
-        'DBT_SNOWFLAKE_PRIVATE_KEY_PATH': snowflakePrivateKeyPath,
-        'DBT_SNOWFLAKE_ROLE': snowflakeRole,
-        'DBT_SNOWFLAKE_DATABASE': snowflakeDatabase,
-        'DBT_SNOWFLAKE_WAREHOUSE': snowflakeWarehouse,
-        'DBT_SNOWFLAKE_SCHEMA': snowflakeSchema,
+        'DBT_PROFILES_DIR': sbtProfilesDir,
+        'DB_SNOWFLAKE_ACCOUNT': snowflakeAccount,
+        'DB_SNOWFLAKE_HOST': snowflakeHost,
+        'DB_SNOWFLAKE_USER': snowflakeUser,
+        'DB_SNOWFLAKE_PASSWORD': snowflakePassword,
+        'DB_SNOWFLAKE_PRIVATE_KEY_PATH': snowflakePrivateKeyPath,
+        'DB_SNOWFLAKE_ROLE': snowflakeRole,
+        'DB_SNOWFLAKE_DATABASE': snowflakeDatabase,
+        'DB_SNOWFLAKE_WAREHOUSE': snowflakeWarehouse,
+        'DB_SNOWFLAKE_SCHEMA': snowflakeSchema,
       },
       healthCheck: {
         command: ['CMD-SHELL', 'dbt --version || exit 1'],
@@ -101,19 +105,19 @@ export class DbtSnowflakeStack extends cdk.Stack {
       },
     })
 
-    const dbtSnowflakeConfig = {
-      'DB_SNOWFLAKE_ACCOUNT': process.env.DB_SNOWFLAKE_ACCOUNT || 'your_account',
-      'DB_SNOWFLAKE_HOST': process.env.DB_SNOWFLAKE_HOST || 'your_host',
-      'DB_SNOWFLAKE_USER': process.env.DB_SNOWFLAKE_USER || 'your_user',
-      'DB_SNOWFLAKE_PASSWORD': process.env.DB_SNOWFLAKE_PASSWORD || 'your_password',
-      'DB_SNOWFLAKE_PRIVATE_KEY_PATH': process.env.DB_SNOWFLAKE_PRIVATE_KEY_PATH || 'your_private_key_path',
-      'DB_SNOWFLAKE_ROLE': snowflakeRole,
-      'DB_SNOWFLAKE_DATABASE': snowflakeDatabase,
-      'DB_SNOWFLAKE_WAREHOUSE': snowflakeWarehouse,
-      'DB_SNOWFLAKE_SCHEMA': snowflakeSchema,
-    };
+    // const dbtSnowflakeConfig = {
+    //   'DB_SNOWFLAKE_ACCOUNT': process.env.DB_SNOWFLAKE_ACCOUNT || 'your_account',
+    //   'DB_SNOWFLAKE_HOST': process.env.DB_SNOWFLAKE_HOST || 'your_host',
+    //   'DB_SNOWFLAKE_USER': process.env.DB_SNOWFLAKE_USER || 'your_user',
+    //   'DB_SNOWFLAKE_PASSWORD': process.env.DB_SNOWFLAKE_PASSWORD || 'your_password',
+    //   'DB_SNOWFLAKE_PRIVATE_KEY_PATH': process.env.DB_SNOWFLAKE_PRIVATE_KEY_PATH || 'your_private_key_path',
+    //   'DB_SNOWFLAKE_ROLE': snowflakeRole,
+    //   'DB_SNOWFLAKE_DATABASE': snowflakeDatabase,
+    //   'DB_SNOWFLAKE_WAREHOUSE': snowflakeWarehouse,
+    //   'DB_SNOWFLAKE_SCHEMA': snowflakeSchema,
+    // };
 
-    createDbtSnowflakeSsmParameter(this, 'DbtSnowflakeConfig', '/dbt/snowflake/info', dbtSnowflakeConfig);
+    // createDbtSnowflakeSsmParameter(this, 'DbtSnowflakeConfig', '/dbt/snowflake/info', dbtSnowflakeConfig);
 
     // Step Functionsのロール
     const stepFunctionsRole = new iam.Role(this, 'StepFunctionsRole', {
@@ -132,7 +136,7 @@ export class DbtSnowflakeStack extends cdk.Stack {
     }))
 
     // サブネットを取得
-    const subnets = vpc.publicSubnets.map(subnet => subnet.subnetId)
+    // const subnets = vpc.publicSubnets.map(subnet => subnet.subnetId)
 
     // Security Groupを新しく作る
     const dbtSecurityGroup = new ec2.SecurityGroup(this, 'DbtSecurityGroup', {
@@ -141,64 +145,24 @@ export class DbtSnowflakeStack extends cdk.Stack {
       allowAllOutbound: true, // ← ここが重要！！！
     })
 
-    // dbt debug タスク
-    const dbtDebugTask = new tasks.EcsRunTask(this, 'DbtDebugTask', {
-      cluster,
-      taskDefinition,
-      launchTarget: new tasks.EcsFargateLaunchTarget({
-        platformVersion: ecs.FargatePlatformVersion.LATEST,
-      }),
-      containerOverrides: [{
-        containerDefinition: container,
-        command: ['debug'],
-        environment: [
-          { name: 'DBT_SNOWFLAKE_ACCOUNT', value: snowflakeAccount },
-          { name: 'DBT_SNOWFLAKE_HOST', value: snowflakeHost },
-          { name: 'DBT_SNOWFLAKE_USER', value: snowflakeUser },
-          { name: 'DBT_SNOWFLAKE_PASSWORD', value: snowflakePassword },
-          { name: 'DBT_SNOWFLAKE_PRIVATE_KEY_PATH', value: snowflakePrivateKeyPath },
-          { name: 'DBT_SNOWFLAKE_ROLE', value: snowflakeRole },
-          { name: 'DBT_SNOWFLAKE_DATABASE', value: snowflakeDatabase },
-          { name: 'DBT_SNOWFLAKE_WAREHOUSE', value: snowflakeWarehouse },
-          { name: 'DBT_SNOWFLAKE_SCHEMA', value: snowflakeSchema },
-        ],
-      }],
-      securityGroups: [dbtSecurityGroup],
-      assignPublicIp: true,
-      subnets: vpc.selectSubnets({ subnetType: ec2.SubnetType.PUBLIC }),
-      integrationPattern: sfn.IntegrationPattern.RUN_JOB,
-    })
+    // dbt
+    const environment = [
+      { name: 'DB_SNOWFLAKE_ACCOUNT', value: snowflakeAccount },
+      { name: 'DB_SNOWFLAKE_HOST', value: snowflakeHost },
+      { name: 'DB_SNOWFLAKE_USER', value: snowflakeUser },
+      { name: 'DB_SNOWFLAKE_PASSWORD', value: snowflakePassword },
+      { name: 'DB_SNOWFLAKE_PRIVATE_KEY_PATH', value: snowflakePrivateKeyPath },
+      { name: 'DB_SNOWFLAKE_ROLE', value: snowflakeRole },
+      { name: 'DB_SNOWFLAKE_DATABASE', value: snowflakeDatabase },
+      { name: 'DB_SNOWFLAKE_WAREHOUSE', value: snowflakeWarehouse },
+      { name: 'DB_SNOWFLAKE_SCHEMA', value: snowflakeSchema },
+    ]
 
-    // dbt run タスク
-    const dbtRunTask = new tasks.EcsRunTask(this, 'DbtRunTask', {
-      cluster,
-      taskDefinition,
-      launchTarget: new tasks.EcsFargateLaunchTarget({
-        platformVersion: ecs.FargatePlatformVersion.LATEST,
-      }),
-      containerOverrides: [{
-        containerDefinition: container,
-        command: ['run', '--fail-fast'],
-        environment: [
-          { name: 'DBT_SNOWFLAKE_ACCOUNT', value: snowflakeAccount },
-          { name: 'DBT_SNOWFLAKE_HOST', value: snowflakeHost },
-          { name: 'DBT_SNOWFLAKE_USER', value: snowflakeUser },
-          { name: 'DBT_SNOWFLAKE_PASSWORD', value: snowflakePassword },
-          { name: 'DBT_SNOWFLAKE_PRIVATE_KEY_PATH', value: snowflakePrivateKeyPath },
-          { name: 'DBT_SNOWFLAKE_ROLE', value: snowflakeRole },
-          { name: 'DBT_SNOWFLAKE_DATABASE', value: snowflakeDatabase },
-          { name: 'DBT_SNOWFLAKE_WAREHOUSE', value: snowflakeWarehouse },
-          { name: 'DBT_SNOWFLAKE_SCHEMA', value: snowflakeSchema },
-        ],
-      }],
-      securityGroups: [dbtSecurityGroup],
-      assignPublicIp: true,
-      subnets: vpc.selectSubnets({ subnetType: ec2.SubnetType.PUBLIC }),
-      integrationPattern: sfn.IntegrationPattern.RUN_JOB,
-    })
+    const dbtDebugTask = createDbtDebugTask(this, cluster, taskDefinition, container, environment, dbtSecurityGroup, vpc);
+    const dbtRunTask = createDbtRunTask(this, cluster, taskDefinition, container, environment, dbtSecurityGroup, vpc);
 
     // Step Functions ステートマシン
-    const definition = dbtDebugTask.next(dbtRunTask)
+    const definition = dbtDebugTask.next(dbtRunTask);
 
     const stateMachine = new sfn.StateMachine(this, 'DbtWorkflow', {
       definition,

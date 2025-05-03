@@ -23,17 +23,17 @@ This project integrates dbt (data build tool) with Snowflake running on AWS infr
 1. Create a `.env` file with your Snowflake credentials:
    ```
    DBT_PROFILES_DIR=/usr/src/app/dbt/profiles
-   DBT_SNOWFLAKE_ACCOUNT=your_account_identifier  # Without snowflakecomputing.com
-   DBT_SNOWFLAKE_USER=your_user
-   DBT_SNOWFLAKE_PASSWORD=your_password
-   DBT_SNOWFLAKE_ROLE=your_role
-   DBT_SNOWFLAKE_DATABASE=your_database
-   DBT_SNOWFLAKE_WAREHOUSE=your_warehouse
-   DBT_SNOWFLAKE_SCHEMA=your_schema
+   DB_SNOWFLAKE_ACCOUNT=your_account_identifier  # Without snowflakecomputing.com
+   DB_SNOWFLAKE_USER=your_user
+   DB_SNOWFLAKE_PASSWORD=your_password
+   DB_SNOWFLAKE_ROLE=your_role
+   DB_SNOWFLAKE_DATABASE=your_database
+   DB_SNOWFLAKE_WAREHOUSE=your_warehouse
+   DB_SNOWFLAKE_SCHEMA=your_schema
    ```
 
    **Important Notes**:
-   - For the `DBT_SNOWFLAKE_ACCOUNT` value, only use the account identifier without the `.snowflakecomputing.com` domain
+   - For the `DB_SNOWFLAKE_ACCOUNT` value, only use the account identifier without the `.snowflakecomputing.com` domain
    - If MFA is enabled, you may need to set up key pair authentication:
      ```bash
      # Generate keys (no passphrase)

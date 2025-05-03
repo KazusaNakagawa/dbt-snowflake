@@ -17,4 +17,9 @@ COPY . .
 
 # Default command
 ENTRYPOINT ["dbt"]
-CMD ["run", "--profiles-dir", "/usr/src/app/dbt/profiles"]
+# CMD ["run", "--profiles-dir", "/usr/src/app/dbt/profiles"]
+CMD ["debug"]
+
+# test command
+# CMD ["bash", "-c", "rm -rf $HOME/.cache/snowflake"]
+

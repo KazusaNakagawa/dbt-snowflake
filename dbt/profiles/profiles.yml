@@ -3,20 +3,22 @@ dbt_snowflake:
   outputs:
     dev:
       type: snowflake
-      account: "{{ env_var('DBT_SNOWFLAKE_ACCOUNT') }}"
-      user: "{{ env_var('DBT_SNOWFLAKE_USER') }}"
+      account: "{{ env_var('DB_SNOWFLAKE_ACCOUNT') }}"
+      host: "{{ env_var('DB_SNOWFLAKE_HOST') }}"
+      user: "{{ env_var('DB_SNOWFLAKE_USER') }}"
       # Use key pair authentication instead of password authentication
-      private_key_path: "{{ env_var('DBT_SNOWFLAKE_PRIVATE_KEY_PATH') }}"
+      private_key_path: "{{ env_var('DB_SNOWFLAKE_PRIVATE_KEY_PATH') }}"
       # Only if the private key has a passphrase
-      # private_key_passphrase: "{{ env_var('DBT_SNOWFLAKE_PRIVATE_KEY_PASSPHRASE', '') }}"
+      # private_key_passphrase: "{{ env_var('DB_SNOWFLAKE_PRIVATE_KEY_PASSPHRASE', '') }}"
 
-      role: "{{ env_var('DBT_SNOWFLAKE_ROLE') }}"
-      database: "{{ env_var('DBT_SNOWFLAKE_DATABASE') }}"
-      warehouse: "{{ env_var('DBT_SNOWFLAKE_WAREHOUSE') }}"
-      schema: "{{ env_var('DBT_SNOWFLAKE_SCHEMA') }}"
+      role: "{{ env_var('DB_SNOWFLAKE_ROLE') }}"
+      database: "{{ env_var('DB_SNOWFLAKE_DATABASE') }}"
+      warehouse: "{{ env_var('DB_SNOWFLAKE_WAREHOUSE') }}"
+      schema: "{{ env_var('DB_SNOWFLAKE_SCHEMA') }}"
       threads: 1
-      connect_timeout: 45 # Timeout in seconds
+      connect_timeout: 30
+      retries: 3
       retry_on_database_errors: true
       client_session_keep_alive: true
       # FIXME: 本番NG 認証しない
-      insecure_mode: true
+      # insecure_mode: true

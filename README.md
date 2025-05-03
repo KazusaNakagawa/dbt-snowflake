@@ -23,17 +23,17 @@ This project integrates dbt (data build tool) with Snowflake running on AWS infr
 1. Create a `.env` file with your Snowflake credentials:
    ```
    DBT_PROFILES_DIR=/usr/src/app/dbt/profiles
-   DBT_SNOWFLAKE_ACCOUNT=your_account_identifier  # Without snowflakecomputing.com
-   DBT_SNOWFLAKE_USER=your_user
-   DBT_SNOWFLAKE_PASSWORD=your_password
-   DBT_SNOWFLAKE_ROLE=your_role
-   DBT_SNOWFLAKE_DATABASE=your_database
-   DBT_SNOWFLAKE_WAREHOUSE=your_warehouse
-   DBT_SNOWFLAKE_SCHEMA=your_schema
+   DB_SNOWFLAKE_ACCOUNT=your_account_identifier  # Without snowflakecomputing.com
+   DB_SNOWFLAKE_USER=your_user
+   DB_SNOWFLAKE_PASSWORD=your_password
+   DB_SNOWFLAKE_ROLE=your_role
+   DB_SNOWFLAKE_DATABASE=your_database
+   DB_SNOWFLAKE_WAREHOUSE=your_warehouse
+   DB_SNOWFLAKE_SCHEMA=your_schema
    ```
 
    **Important Notes**:
-   - For the `DBT_SNOWFLAKE_ACCOUNT` value, only use the account identifier without the `.snowflakecomputing.com` domain
+   - For the `DB_SNOWFLAKE_ACCOUNT` value, only use the account identifier without the `.snowflakecomputing.com` domain
    - If MFA is enabled, you may need to set up key pair authentication:
      ```bash
      # Generate keys (no passphrase)
@@ -91,32 +91,25 @@ This project integrates dbt (data build tool) with Snowflake running on AWS infr
 
 ### Deployment
 
-1. Update AWS region and account IDs in the AWS resource files:
-   - Update `aws/ecs/task-definition.json` with your container details
-   - Update IAM roles in `aws/iam/` directory
-   - Configure the state machine in `aws/step-functions/dbt-workflow.json`
-
-2. Run the deployment script:
-   ```bash
-   ./deploy.sh
-   ```
-
-3. Monitor the deployment in the AWS Management Console.
+- [./cdk/README.md](./cdk/README.md)
 
 ## Project Structure
 
-- `dbt/`: DBT project files
-  - `models/`: DBT SQL models
-    - `staging/`: Initial transformations from raw data
-    - `marts/core/`: Business-specific transformations
-  - `profiles/`: Contains Snowflake connection profiles
-  - `target/`: Generated artifacts and compiled SQL
-- `aws/`: AWS infrastructure definitions
-  - `ecs/`: AWS ECS configurations
-  - `iam/`: IAM roles and policies
-  - `step-functions/`: AWS Step Functions workflow definitions
-- `docker/`: Docker configuration
-- `scripts/`: Utility scripts
+```bash
+cdk/
+├── lib/                  # Contains the main CDK stack definitions
+├── bin/                  # Entry point for the CDK application   
+├── cdk.json              # Configuration file for the CDK application
+└── README.md             # Documentation for the CDK setup and usage
+dbt/
+├── models/
+│   ├── marts/core/       # Business-specific transformations
+│   ├── staging/          # Initial transformations from raw data
+├── profiles/             # Contains Snowflake connection profiles
+├── target/               # Generated artifacts and compiled SQL
+docker/                   # Docker configuration
+scripts/                  # Utility scripts
+```
 
 ## Data Model
 
